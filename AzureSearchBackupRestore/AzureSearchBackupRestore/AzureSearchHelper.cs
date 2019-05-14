@@ -21,62 +21,29 @@ using Newtonsoft.Json.Serialization;
 
 namespace AzureSearchBackupRestore
 {
-    public class AzureSearchHelper
-    {
-        public const string ApiVersionString = "api-version=2017-11-11";
+	public class AzureSearchHelper
+	{
+		public const string ApiVersionString = "api-version=2017-11-11";
 
-        private static readonly JsonSerializerSettings _jsonSettings;
+		public static HttpResponseMessage SendSearchRequest(HttpClient client, HttpMethod method, Uri uri, string json = null, string odata = null)
+		{
+			UriBuilder builder = new UriBuilder(uri);
+			string separator = string.IsNullOrWhiteSpace(builder.Query) ? string.Empty : "&";
+			builder.Query = builder.Query.TrimStart('?') + separator + ApiVersionString;
 
-        static AzureSearchHelper()
-        {
-            _jsonSettings = new JsonSerializerSettings
-            {
-                Formatting = Formatting.Indented, // for readability, change to None for compactness
-                ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                DateTimeZoneHandling = DateTimeZoneHandling.Utc
-            };
+			if (odata != null)
+			{
+				builder.Query = builder.Query.TrimStart('?') + "&" + odata;
+			}
 
-            _jsonSettings.Converters.Add(new StringEnumConverter());
-        }
+			var request = new HttpRequestMessage(method, builder.Uri);
 
-        public static string SerializeJson(object value)
-        {
-            return JsonConvert.SerializeObject(value, _jsonSettings);
-        }
+			if (json != null)
+			{
+				request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+			}
 
-        public static T DeserializeJson<T>(string json)
-        {
-            return JsonConvert.DeserializeObject<T>(json, _jsonSettings);
-        }
-
-        public static HttpResponseMessage SendSearchRequest(HttpClient client, HttpMethod method, Uri uri, string json = null, string odata = null)
-        {
-            UriBuilder builder = new UriBuilder(uri);
-            string separator = string.IsNullOrWhiteSpace(builder.Query) ? string.Empty : "&";
-            builder.Query = builder.Query.TrimStart('?') + separator + ApiVersionString;
-
-            if(odata != null)
-            {
-                builder.Query = builder.Query.TrimStart('?') + "&" + odata;
-            }
-
-            var request = new HttpRequestMessage(method, builder.Uri);
-
-            if (json != null)
-            {
-                request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-            }
-
-            return client.SendAsync(request).Result;
-        }
-
-        public static void EnsureSuccessfulSearchResponse(HttpResponseMessage response)
-        {
-            if (!response.IsSuccessStatusCode)
-            {
-                string error = response.Content == null ? null : response.Content.ReadAsStringAsync().Result;
-                throw new Exception("Search request failed: " + error);
-            }
-        }
-    }
+			return client.SendAsync(request).Result;
+		}
+	}
 }
