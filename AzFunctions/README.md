@@ -27,7 +27,7 @@ Follow the steps below for building and running the Function application on Azur
    Function Parameter Name | Description
    ----------------------- | -----------
    AZURE_STORAGE_CONNECTION_STRING | Specify the **Connection String** to an Azure Storage account.
-   AzStorageContainerName | Specify a storage **Container** name in the Azure Storage account specified by the parameter 'AZURE_STORAGE_CONNECTION_STRING'.  This container will be used to backup the knowledge base documents from the source Azure Search instance and restore it in the target instance.
+   AzStorageContainerName | Specify a storage **Container** name in the Azure Storage account specified by the parameter 'AZURE_STORAGE_CONNECTION_STRING'.  This container will be used to store the knowledge base documents from the source Azure Search instance and then restore it in the target instance.
    SrcSearchSvcName | Specify the source Azure Search instance **Service Name**.
    TgtSearchSvcName | Specify the target Azure Search instance **Service Name**.
    SrcSearchApiKey | Specify the source Azure Search instance **API Key**.
@@ -35,7 +35,7 @@ Follow the steps below for building and running the Function application on Azur
 
 5. Clone this GitHub repository.
 
-   In the Azure cloud shell, clone this [GitHub repository](https://github.com/pchoudhari/QnAMakerBackupRestore). Refer to the command snippet below.
+   In the Azure cloud shell, clone this [GitHub repository](https://github.com/pchoudhari/QnAMakerBackupRestore) to the `git-repos` directory. Refer to the command snippet below.
 
    ```bash
    # Create the root directory to store all your projects.
@@ -55,7 +55,7 @@ Follow the steps below for building and running the Function application on Azur
 
    A Timer Trigger lets you run a Function on a schedule.
 
-   This Function is configured to trigger @ 08:30am during the weekdays (by default).  To configure a different time interval for synchronizing the knowledge bases in the source and target Azure Search instances, modify the Function's Input Trigger. Edit the `./AzSearch/AzSearchBackupRestore.cs` class and update the **TimerTrigger** annotation value in the main Function method **Run**.
+   This Function is configured to trigger @ 08:30am during the weekdays (Mon. - Fri. by default).  To configure a different time interval for synchronizing the knowledge bases in the source and target Azure Search instances, modify the Function's Input Trigger. Edit the `./AzSearch/AzSearchBackupRestore.cs` class and update the **TimerTrigger** annotation value in the main Function method **Run**.
 
    Azure Function uses the NCronTab library to interpret NCRONTAB expressions.  To configure the timer interval, refer to the Azure Function documentation [here](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=csharp).
 
