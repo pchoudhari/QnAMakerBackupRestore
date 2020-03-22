@@ -17,7 +17,7 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 
 /**
- * Microsoft Disclaimer:
+ * Disclaimer:
  * This code is open source and you are free to modify it to suit your needs. Use this code at your own discretion.  Microsoft will try to address issues arising out of this code on a best efforts basis.
  *
  * Microsoft assumes no responsibility whatsoever for any damages resulting from the use of this code in 'Production' environments or elsewhere !
