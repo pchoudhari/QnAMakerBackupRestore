@@ -14,7 +14,7 @@ Follow the steps below for building and running the Function application on Azur
 
 3. Create a Function Application in Azure.
 
-   Refer to the [Azure Function documentation](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-azure-function-azure-cli?tabs=bash%2Cbrowser&pivots=programming-language-csharp#create-supporting-azure-resources-for-your-function) to create an application.  Alternatively, if you are familiar with Azure Portal, you can also create the Function application via the Portal. 
+   Refer to the [Azure Function documentation](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-azure-function-azure-cli?tabs=bash%2Cbrowser&pivots=programming-language-csharp#create-supporting-azure-resources-for-your-function) to create an Function Application.  Alternatively, you can also create the Function application via the Azure Portal. 
 
 4. Update the Azure Function configuration parameters.
 
@@ -47,7 +47,15 @@ Follow the steps below for building and running the Function application on Azur
    #
    ```
  
-6. Deploy the Azure Search Synchronization Function on Azure.
+6. (Optional) Update the Function Input Trigger.
+
+   A Timer Trigger lets you run a Function on a schedule.
+
+   The Function is configured to trigger @ 08:30am during the weekdays.  To configure a different time interval for synchronizing the knowledge bases in the source and target Azure Search instances, modify the Function's Input Trigger. Edit the `./AzSearch/AzSearchBackupRestore.cs` class and update the **TimerTrigger** annotation value in the main Function method **Run**.
+
+   Azure Function uses the NCronTab library to interpret NCRONTAB expressions.  To configure the timer interval, refer to the Azure Function documentation [here](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=csharp).
+
+7. Deploy the Azure Search Synchronization Function on Azure.
 
    Refer to the commands in the snippet below to deploy the Function Application on Azure.
 
@@ -58,3 +66,9 @@ Follow the steps below for building and running the Function application on Azur
    $ func azure functionapp publish <name-of-function-application>
    #
    ```
+
+8. Confirm and verify the Function runs on Azure.
+
+   Use the Azure portal to verify the Azure Function got deployed on Azure.
+
+   Verify the Function runs per the configured schedule.  Use the Function **Monitor** tab to view the messages logged by the application.
