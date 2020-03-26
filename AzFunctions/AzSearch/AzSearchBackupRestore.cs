@@ -16,6 +16,10 @@ using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+
 /**
  * Disclaimer:
  * This code is open source and you are free to modify it to suit your needs. Use this code at your own discretion.  Microsoft will try to address issues arising out of this code on a best efforts basis.
@@ -43,12 +47,32 @@ namespace AzSearch
 		private static int MaxBatchSize = 500;          // JSON files will contain this many documents / file and can be up to 1000
 		private static int ParallelizedJobs = 10;       // Output content in parallel jobs
 
-        	[FunctionName("AzSyncCognitiveSearchKb")]
+        	[FunctionName("SchCognitiveSearchKbSync")]
         	public static async Task Run([TimerTrigger("0 30 8 * * 1-5")]TimerInfo myTimer, ILogger log)
 		{
-            		log.LogInformation($"Func:AzSyncCognitiveSeaarchKb: Timer triggered, Begin: {DateTime.Now}");
+            		log.LogInformation($"Func:SchCognitiveSearchKbSync: Begin: {DateTime.Now}");
 			logger = log;
+			await ExecuteSearchSyncKb();
 
+            		log.LogInformation($"Func:SchCognitiveSearchKbSync: End: {DateTime.Now}");
+		}
+
+        	[FunctionName("HttpCogSearchKbSync")]
+        	public static async Task<IActionResult> Run0(
+			[HttpTrigger(AuthorizationLevel.Function,"get")] HttpRequest request, ILogger log)
+		{
+            		log.LogInformation($"Func:HttpCogSearchKbSync: Begin: {DateTime.Now}");
+			logger = log;
+			await ExecuteSearchSyncKb();
+            		log.LogInformation($"Func:HttpCogSearchKbSync: End: {DateTime.Now}");
+
+			return new OkObjectResult("Completed Az Search KB Sync Run...");
+		}
+
+		private static async Task ExecuteSearchSyncKb()
+		{
+            		logger.LogInformation($"ExecuteSearchSyncKb: Begin");
+		
 			SourceSearchServiceName = Environment.GetEnvironmentVariable("SrcSearchSvcName");
 			TargetSearchServiceName = Environment.GetEnvironmentVariable("TgtSearchSvcName");
 			SourceAPIKey = Environment.GetEnvironmentVariable("SrcSearchApiKey");
@@ -72,7 +96,7 @@ namespace AzSearch
 				TargetIndexClient = TargetSearchClient.Indexes.GetClient(nameOfIndex);
 
 				// Extract the index schema and write to file
-				log.LogInformation($"Writing Index Schema to {nameOfIndex}.schema\r\n");
+				logger.LogInformation($"Writing Index Schema to {nameOfIndex}.schema\r\n");
 				var indexSchema = await GetIndexSchemaAsync(nameOfIndex);
 
 				// Extract the content to JSON files 
@@ -83,22 +107,17 @@ namespace AzSearch
 				await DeleteIndexAsync(nameOfIndex);
 				await CreateTargetIndexAsync(indexSchema);
 				ImportFromJSON(nameOfIndex);
-				log.LogInformation("\r\nWaiting 10 seconds for target to index content...");
-				log.LogInformation("NOTE: For really large indexes it may take longer to index all content.\r\n");
+				logger.LogInformation("\r\nWaiting 10 seconds for target to index content...");
+				logger.LogInformation("NOTE: For really large indexes it may take longer to index all content.\r\n");
 				Thread.Sleep(10000);
 
 				// Validate all content is in target index
 				int TargetDocCount = GetCurrentDocCount(TargetIndexClient);
-				log.LogInformation($"Source Index {nameOfIndex} contains {SourceDocCount} docs");
-				log.LogInformation($"Target Index {nameOfIndex} contains {TargetDocCount} docs\r\n");
+				logger.LogInformation($"Source Index {nameOfIndex} contains {SourceDocCount} docs");
+				logger.LogInformation($"Target Index {nameOfIndex} contains {TargetDocCount} docs\r\n");
 
 			}
-
-			// ID03192020.so
-			// Console.WriteLine("Press any key to continue...");
-			// Console.ReadLine();
-			// ID03192020.eo
-            		log.LogInformation($"Func:AzSyncCognitiveSeaarchKb: End: {DateTime.Now}");
+            		logger.LogInformation($"ExecuteSearchSyncKb: End");
 		}
 
 		static async Task ReCreateSynonymMapAsync()
