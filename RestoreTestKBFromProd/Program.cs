@@ -18,20 +18,22 @@ namespace RestoreTestKbFromProd
         // Example: <secret key>
         private static string cogntiveServiceKey = "QNA_MAKER_SUBSCRIPTION_KEY";
 
+        // Example: English
+        // provide the KB language for your QnA Service. That is used to set testKB index analyzer. 
+        private static string testKBIndexLanguage = "QNA_MAKER_TESTKBINDEX_LANGUAGE";
 
         private IQnAMakerClient client;
 
-
         public static void Main(string[] args)
         {
-            Console.WriteLine("Started..");
+            Console.WriteLine("Started Processing..\n");
             var program = new Program();
             program.Process().Wait();
-            Console.WriteLine("Complete.");
+            Console.WriteLine("\nCompleted.");
         }
 
         private async Task Process()
-        {
+        {            
             client = new QnAMakerClient(new ApiKeyServiceClientCredentials(cogntiveServiceKey))
             {
                 Endpoint = cognitiveServiceEndpoint
@@ -50,9 +52,21 @@ namespace RestoreTestKbFromProd
 
                 if (publishedKbs.Count > 0)
                 {
+                    foreach (var publishedKb in publishedKbs)
+                    {
+                        Console.WriteLine($"Existing Published KBId: {publishedKb.Id} with Language: {publishedKb.Language}");
+                    }
+
+                    if (testKBIndexLanguage == "QNA_MAKER_TESTKBINDEX_LANGUAGE")
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("\n\nPlease set the value for variable 'testKBIndexLanguage'. It should be mostly same as above published KB language");
+                        return;
+                    }
+
                     // create a sample KB and delete - to create testKb index in the Azure Search
                     // create azure search testkb index analyzer with the same language as first published kb
-                    var sampleKbId = await this.CreateSampleKb(publishedKbs.First().Language);
+                    var sampleKbId = await this.CreateSampleKb(testKBIndexLanguage);
                     await this.DeleteKB(sampleKbId);
 
                     foreach (var publishedKb in publishedKbs)
@@ -95,7 +109,7 @@ namespace RestoreTestKbFromProd
 
         private async Task<string> CreateSampleKb(string language)
         {
-            Console.WriteLine($"Creating SampleKB to create default azure search 'testkb' index for language: {language}");
+            Console.WriteLine($"\nCreating SampleKB to create default azure search 'testkb' index for language: {language}");
             var qna1 = new QnADTO
             {
                 Answer = "a1",
@@ -119,7 +133,7 @@ namespace RestoreTestKbFromProd
 
         private async Task DeleteKB(string kbId)
         {
-            Console.WriteLine($"Deleting the sampleKB created.");
+            Console.WriteLine($"Deleting the sampleKB created.\n");
             await this.client.Knowledgebase.DeleteAsync(kbId);
         }
 
