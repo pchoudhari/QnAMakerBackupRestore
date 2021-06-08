@@ -32,9 +32,6 @@ namespace RestoreTestKbFromProd
 
         private async Task Process()
         {
-            cogntiveServiceKey = "ac7981d3ee644132b10f638fc309a833";
-            cognitiveServiceEndpoint = "https://demoqnaexternalasecs4.cognitiveservices.azure.com/";
-
             client = new QnAMakerClient(new ApiKeyServiceClientCredentials(cogntiveServiceKey))
             {
                 Endpoint = cognitiveServiceEndpoint
