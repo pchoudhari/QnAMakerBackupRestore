@@ -198,6 +198,7 @@ namespace RestoreTestKbFromProd
 
         private async Task RestoreTestKbForMultipleLanguages(string kbId)
         {
+            // We need to add a dummy QnA to create the relevant test index for the KB. In subsequent steps we'll override this with actual Prod KB content.
             var qna = new QnADTO() { Answer = "dummy answer", Questions = new List<string> { "dummy question" } };
             var updateQnA = new UpdateKbOperationDTO();
             updateQnA.Add = new UpdateKbOperationDTOAdd();
