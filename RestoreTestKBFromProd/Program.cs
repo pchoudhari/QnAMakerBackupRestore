@@ -9,6 +9,7 @@ namespace RestoreTestKbFromProd
     using Microsoft.Azure.CognitiveServices.Knowledge.QnAMaker;
     using Microsoft.Azure.CognitiveServices.Knowledge.QnAMaker.Models;
     using Newtonsoft.Json;
+    using Azure.Search.Documents.Indexes;
 
     public class Program
     {
@@ -19,10 +20,24 @@ namespace RestoreTestKbFromProd
         private static string cogntiveServiceKey = "QNA_MAKER_SUBSCRIPTION_KEY";
 
         // Example: English
-        // provide the KB language for your QnA Service. That is used to set testKB index analyzer. 
+        // provide the KB language for your QnA Service. That is used to set testKB index analyzer. Not required for multiple language resource.
         private static string testKBIndexLanguage = "QNA_MAKER_TESTKBINDEX_LANGUAGE";
 
+        // Example: true/ false
+        // Applicable for QnA Maker V2/ Language service. This is used to decide if each published kb has a separate test index.
+        private static bool enableMultipleLanguages = false;
+
+        // Example: https://searchservice.search.windows.net
+        // The search service associated with the QnA Maker/ Language resource.
+        private static string searchServiceEndpoint = "SEARCH_SERVICE_ENDPOINT";
+
+        // Example: <secret key>
+        // Key of the search service.
+        private static string searchServiceApiKey = "SEARCH_SERVICE_API_KEY";
+
         private IQnAMakerClient client;
+
+        private SearchIndexClient searchClient;
 
         public static void Main(string[] args)
         {
@@ -33,11 +48,16 @@ namespace RestoreTestKbFromProd
         }
 
         private async Task Process()
-        {            
+        {
             client = new QnAMakerClient(new ApiKeyServiceClientCredentials(cogntiveServiceKey))
             {
                 Endpoint = cognitiveServiceEndpoint
             };
+
+            if (!searchServiceApiKey.Equals("SEARCH_SERVICE_API_KEY"))
+            {
+                searchClient = new SearchIndexClient(new Uri(searchServiceEndpoint), new Azure.AzureKeyCredential(searchServiceApiKey));
+            }
 
             var allKbs = await this.GetKbs();
             if (allKbs.Count <= 0)
@@ -47,11 +67,28 @@ namespace RestoreTestKbFromProd
             else
             {
                 var publishedKbs = allKbs.Where(kb => !string.IsNullOrEmpty(kb.LastPublishedTimestamp)).ToList();
-
-                Console.WriteLine($"Total KB Count: {allKbs.Count}, published Kbs Count: {publishedKbs.Count}, unpublished Kbs (can't be restored): {allKbs.Count - publishedKbs.Count}");
-
                 if (publishedKbs.Count > 0)
                 {
+                    if (enableMultipleLanguages)
+                    {
+                        Console.WriteLine($"Total KB Count: {allKbs.Count}, published Kbs Count: {publishedKbs.Count}, unpublished Kbs: {allKbs.Count - publishedKbs.Count}");
+                        foreach (var publishedKb in publishedKbs)
+                        {
+                            try
+                            {
+                                var testIndexName = publishedKb.Id + "testkb";
+                                var exists = await searchClient.GetIndexAsync(testIndexName);
+                            }
+                            catch (Azure.RequestFailedException e) when (e.Status == 404)
+                            {
+                                await this.RestoreTestKbForMultipleLanguages(publishedKb.Id);
+                            }
+                        }
+
+                        return;
+                    }
+
+                    Console.WriteLine($"Total KB Count: {allKbs.Count}, published Kbs Count: {publishedKbs.Count}, unpublished Kbs (can't be restored): {allKbs.Count - publishedKbs.Count}");
                     foreach (var publishedKb in publishedKbs)
                     {
                         Console.WriteLine($"Existing Published KBId: {publishedKb.Id} with Language: {publishedKb.Language}");
@@ -157,8 +194,21 @@ namespace RestoreTestKbFromProd
 
             return operation;
         }
-
         // </MonitorOperation>
+
+        private async Task RestoreTestKbForMultipleLanguages(string kbId)
+        {
+            // We need to add a dummy QnA to create the relevant test index for the KB. In subsequent steps we'll override this with actual Prod KB content.
+            var qna = new QnADTO() { Answer = "dummy answer", Questions = new List<string> { "dummy question" } };
+            var updateQnA = new UpdateKbOperationDTO();
+            updateQnA.Add = new UpdateKbOperationDTOAdd();
+            updateQnA.Add.QnaList = new List<QnADTO>() { qna };
+
+            // creates <kbid>testkb
+            var operation = await client.Knowledgebase.UpdateAsync(kbId, updateQnA);
+            await this.MonitorOperation(operation);
+            await this.RestoreTestKbFromProd(kbId);
+        }
     }
 
     class KnowledgebasesDTO2

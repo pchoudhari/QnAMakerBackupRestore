@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Search.Documents" Version="11.3.0" />
     <PackageReference Include="Microsoft.Azure.CognitiveServices.Knowledge.QnAMaker" Version="3.0.0-preview.1" />
   </ItemGroup>
 
